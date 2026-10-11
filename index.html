@@ -332,6 +332,8 @@
 
     .result h1 { font-size: 29px; }
     .result-copy { margin: 10px 0 22px; color: var(--muted); }
+    .personal-best { margin: -12px 0 22px; color: var(--muted); }
+    .personal-best strong { color: var(--accent); }
 
     .final-score {
       display: inline-flex;
@@ -460,6 +462,7 @@
     let current = 0;
     let score = 0;
     let answered = false;
+    const personalBestKey = "cosmic-quiz-personal-best";
 
     function renderQuestion() {
       const item = questions[current];
@@ -513,8 +516,29 @@
       nextButton.focus();
     }
 
+    function savePersonalBest(currentScore) {
+      try {
+        const storage = window.localStorage;
+        const storedScore = storage.getItem(personalBestKey);
+        const parsedScore = storedScore !== null && /^\d+$/.test(storedScore)
+          ? Number(storedScore)
+          : 0;
+        const savedScore = Number.isInteger(parsedScore) && parsedScore >= 0 && parsedScore <= questions.length
+          ? parsedScore
+          : 0;
+        const personalBest = Math.max(currentScore, savedScore);
+        if (storedScore !== String(personalBest)) {
+          storage.setItem(personalBestKey, String(personalBest));
+        }
+        return personalBest;
+      } catch {
+        return null;
+      }
+    }
+
     function showResults() {
       const percentage = score / questions.length;
+      const personalBest = savePersonalBest(score);
       const reaction = percentage === 1
         ? ["🤩", "Out of this world!"]
         : percentage >= .7
@@ -532,6 +556,7 @@
         <h1>${reaction[1]}</h1>
         <p class="result-copy">You completed your space exploration quiz.</p>
         <div class="final-score"><strong>${score}</strong> out of ${questions.length} correct</div>
+        ${personalBest === null ? "" : `<p class="personal-best">Personal best: <strong>${personalBest}</strong> out of ${questions.length}</p>`}
         <button class="next restart" id="restart" type="button">Explore again <span aria-hidden="true">↻</span></button>
       `;
       document.querySelector("#restart").addEventListener("click", restart);
